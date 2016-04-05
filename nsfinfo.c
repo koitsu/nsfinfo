@@ -30,6 +30,7 @@ SUCH DAMAGE.
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sysexits.h>
 #include <md5.h>
 #include <sha.h>
 
@@ -72,7 +73,7 @@ USAGE(void)
 	printf("\n");
 	printf("https://github.com/koitsu/nsfinfo\n");
 	printf("Report bugs at https://github.com/koitsu/nsfinfo/issues\n");
-	exit(0);
+	exit(EX_USAGE);
 }
 
 int
@@ -80,7 +81,7 @@ main(int argc, char *argv[])
 {
 	int ch;
 	int json_output  = 0;
-	int exitcode     = 0;
+	int exitcode     = EX_OK;
 	int fd           = -1;
 	char *filename   = NULL;
 	char *buf        = NULL;
@@ -112,20 +113,20 @@ main(int argc, char *argv[])
 	buf = calloc(NSF_HEADER_SIZE, 1);
 	if (buf == NULL) {
 		printf("calloc() failed (buf)\n");
-		exitcode = 1;
+		exitcode = EX_OSERR;
 		goto finish;
 	}
 
 	fd = open(filename, O_RDONLY);
 	if (fd == -1) {
 		printf("open() failed\n");
-		exitcode = 1;
+		exitcode = EX_NOINPUT;
 		goto finish;
 	}
 
 	if (read(fd, buf, NSF_HEADER_SIZE) != NSF_HEADER_SIZE) {
 		printf("read() was short: file too small\n");
-		exitcode = 1;
+		exitcode = EX_DATAERR;
 		goto finish;
 	}
 
@@ -134,14 +135,14 @@ main(int argc, char *argv[])
 	data = calloc(NSF_HEADER_SIZE, 1);
 	if (data == NULL) {
 		printf("calloc() failed (data)\n");
-		exitcode = 1;
+		exitcode = EX_OSERR;
 		goto finish;
 	}
 
 	if (buf[0x00] != 'N' || buf[0x01] != 'E' || buf[0x02] != 'S' ||
 	    buf[0x03] != 'M' || buf[0x04] != 0x1a) {
 		printf("file is not in NSF format\n");
-		exitcode = 1;
+		exitcode = EX_DATAERR;
 		goto finish;
 	}
 
