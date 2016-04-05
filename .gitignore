@@ -1,3 +1,6 @@
+# nsfinfo binary itself
+nsfinfo
+
 # Object files
 *.o
 *.ko
