@@ -46,14 +46,7 @@ struct nsf {
 	char		artist[32];		/* offset 0x2e */
 	char		copyright[32];		/* offset 0x4e */
 	uint16_t	speed_ntsc;		/* offset 0x6e */
-	uint8_t		bankswitch70;		/* offset 0x70 */
-	uint8_t		bankswitch71;		/* offset 0x71 */
-	uint8_t		bankswitch72;		/* offset 0x72 */
-	uint8_t		bankswitch73;		/* offset 0x73 */
-	uint8_t		bankswitch74;		/* offset 0x74 */
-	uint8_t		bankswitch75;		/* offset 0x75 */
-	uint8_t		bankswitch76;		/* offset 0x76 */
-	uint8_t		bankswitch77;		/* offset 0x77 */
+	uint64_t	bankswitch;		/* offset 0x70 */
 	uint16_t	speed_pal;		/* offset 0x78 */
 	uint8_t		region;			/* offset 0x7a */
 	uint8_t		extra_sound;		/* offset 0x7b */
@@ -204,27 +197,30 @@ main(int argc, char *argv[])
 	data->version      = buf[0x05];
 	data->song_count   = buf[0x06];
 	data->song_start   = buf[0x07];
-	data->load_addr    = buf[0x08] + (buf[0x09] << 8);
-	data->init_addr    = buf[0x0a] + (buf[0x0b] << 8);
-	data->play_addr    = buf[0x0c] + (buf[0x0d] << 8);
+	data->load_addr    = buf[0x08] | ((uint16_t) buf[0x09] << 8);
+	data->init_addr    = buf[0x0a] | ((uint16_t) buf[0x0b] << 8);
+	data->play_addr    = buf[0x0c] | ((uint16_t) buf[0x0d] << 8);
 
 	memcpy(data->name,      buf+0x0e, sizeof(data->name));
 	memcpy(data->copyright, buf+0x2e, sizeof(data->copyright));
 	memcpy(data->artist,    buf+0x4e, sizeof(data->artist));
 
-	data->speed_ntsc   = buf[0x6e] + (buf[0x6f] << 8);
-	data->bankswitch70 = buf[0x70];
-	data->bankswitch71 = buf[0x71];
-	data->bankswitch72 = buf[0x72];
-	data->bankswitch73 = buf[0x73];
-	data->bankswitch74 = buf[0x74];
-	data->bankswitch75 = buf[0x75];
-	data->bankswitch76 = buf[0x76];
-	data->bankswitch77 = buf[0x77];
-	data->speed_pal    = buf[0x78] + (buf[0x79] << 8);
+	data->speed_ntsc   = buf[0x6e] | ((uint16_t) buf[0x6f] << 8);
+	data->bankswitch   = ((uint64_t) buf[0x70] << 56) |
+	                     ((uint64_t) buf[0x71] << 48) |
+	                     ((uint64_t) buf[0x72] << 40) |
+	                     ((uint64_t) buf[0x73] << 32) |
+	                     ((uint64_t) buf[0x74] << 24) |
+	                     ((uint64_t) buf[0x75] << 16) |
+	                     ((uint64_t) buf[0x76] << 8)  |
+	                     buf[0x77];
+	data->speed_pal    = buf[0x78] | ((uint16_t) buf[0x79] << 8);
 	data->region       = buf[0x7a];
 	data->extra_sound  = buf[0x7b];
-	data->reserved     = buf[0x7c] + (buf[0x7d] << 8) + (buf[0x7e] << 16) + (buf[0x7f] << 24);
+	data->reserved     = ((uint32_t) buf[0x7c] << 24) |
+	                     ((uint32_t) buf[0x7d] << 16) |
+	                     ((uint32_t) buf[0x7e] << 8)  |
+	                     buf[0x7f];
 
 	md5 = MD5File(filename, NULL);
 	sha1 = SHA_File(filename, NULL);
@@ -262,28 +258,21 @@ main(int argc, char *argv[])
 	if (json_output) {
 		printf("{\n");
 		printf("  \"nsf\": {\n");
-		printf("    \"version\": %u,\n",              data->version);
-		printf("    \"song_count\": %u,\n",           data->song_count);
-		printf("    \"song_start\": %u,\n",           data->song_start);
-		printf("    \"load_addr\": \"0x%04x\",\n",    data->load_addr);
-		printf("    \"init_addr\": \"0x%04x\",\n",    data->init_addr);
-		printf("    \"play_addr\": \"0x%04x\",\n",    data->play_addr);
-		printf("    \"name\": \"%s\",\n",             name_e);
-		printf("    \"artist\": \"%s\",\n",           artist_e);
-		printf("    \"copyright\": \"%s\",\n",        copyright_e);
-		printf("    \"speed_ntsc\": \"0x%04x\",\n",   data->speed_ntsc);
-		printf("    \"bankswitch70\": \"0x%02x\",\n", data->bankswitch70);
-		printf("    \"bankswitch71\": \"0x%02x\",\n", data->bankswitch71);
-		printf("    \"bankswitch72\": \"0x%02x\",\n", data->bankswitch72);
-		printf("    \"bankswitch73\": \"0x%02x\",\n", data->bankswitch73);
-		printf("    \"bankswitch74\": \"0x%02x\",\n", data->bankswitch74);
-		printf("    \"bankswitch75\": \"0x%02x\",\n", data->bankswitch75);
-		printf("    \"bankswitch76\": \"0x%02x\",\n", data->bankswitch76);
-		printf("    \"bankswitch77\": \"0x%02x\",\n", data->bankswitch77);
-		printf("    \"speed_pal\": \"0x%04x\",\n",    data->speed_pal);
-		printf("    \"region\": \"0x%02x\",\n",       data->region);
-		printf("    \"extra_sound\": \"0x%02x\",\n",  data->extra_sound);
-		printf("    \"reserved\": \"0x%04x\"\n",      data->reserved);
+		printf("    \"version\": %u,\n",           data->version);
+		printf("    \"song_count\": %u,\n",        data->song_count);
+		printf("    \"song_start\": %u,\n",        data->song_start);
+		printf("    \"load_addr\": \"%04x\",\n",   data->load_addr);
+		printf("    \"init_addr\": \"%04x\",\n",   data->init_addr);
+		printf("    \"play_addr\": \"%04x\",\n",   data->play_addr);
+		printf("    \"name\": \"%s\",\n",          name_e);
+		printf("    \"artist\": \"%s\",\n",        artist_e);
+		printf("    \"copyright\": \"%s\",\n",     copyright_e);
+		printf("    \"speed_ntsc\": \"%04x\",\n",  data->speed_ntsc);
+		printf("    \"bankswitch\": \"%08lx\",\n", data->bankswitch);
+		printf("    \"speed_pal\": \"%04x\",\n",   data->speed_pal);
+		printf("    \"region\": \"%02x\",\n",      data->region);
+		printf("    \"extra_sound\": \"%02x\",\n", data->extra_sound);
+		printf("    \"reserved\": \"%04x\"\n",     data->reserved);
 		printf("  },\n");
 		printf("  \"metadata\": {\n");
 		printf("    \"md5\": \"%s\",\n", md5);
@@ -295,25 +284,18 @@ main(int argc, char *argv[])
 		printf("version      = %u\n",     data->version);
 		printf("song_count   = %u\n",     data->song_count);
 		printf("song_start   = %u\n",     data->song_start);
-		printf("load_addr    = $%04x\n",  data->load_addr);
-		printf("init_addr    = $%04x\n",  data->init_addr);
-		printf("play_addr    = $%04x\n",  data->play_addr);
+		printf("load_addr    = %04x\n",   data->load_addr);
+		printf("init_addr    = %04x\n",   data->init_addr);
+		printf("play_addr    = %04x\n",   data->play_addr);
 		printf("name         = \"%s\"\n", data->name);
 		printf("artist       = \"%s\"\n", data->artist);
 		printf("copyright    = \"%s\"\n", data->copyright);
-		printf("speed_ntsc   = $%04x\n",  data->speed_ntsc);
-		printf("bankswitch70 = $%02x\n",  data->bankswitch70);
-		printf("bankswitch71 = $%02x\n",  data->bankswitch71);
-		printf("bankswitch72 = $%02x\n",  data->bankswitch72);
-		printf("bankswitch73 = $%02x\n",  data->bankswitch73);
-		printf("bankswitch74 = $%02x\n",  data->bankswitch74);
-		printf("bankswitch75 = $%02x\n",  data->bankswitch75);
-		printf("bankswitch76 = $%02x\n",  data->bankswitch76);
-		printf("bankswitch77 = $%02x\n",  data->bankswitch77);
-		printf("speed_pal    = $%04x\n",  data->speed_pal);
-		printf("region       = $%02x\n",  data->region);
-		printf("extra_sound  = $%02x\n",  data->extra_sound);
-		printf("reserved     = $%04x\n",  data->reserved);
+		printf("speed_ntsc   = %04x\n",   data->speed_ntsc);
+		printf("bankswitch   = %08lx\n",  data->bankswitch);
+		printf("speed_pal    = %04x\n",   data->speed_pal);
+		printf("region       = %02x\n",   data->region);
+		printf("extra_sound  = %02x\n",   data->extra_sound);
+		printf("reserved     = %04x\n",   data->reserved);
 		printf("md5          = %s\n",     md5);
 		printf("sha1         = %s\n",     sha1);
 	}
