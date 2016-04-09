@@ -174,9 +174,27 @@ main(int argc, char *argv[])
 		goto finish;
 	}
 
+	/*
+	 * NSF file validation
+	 */
 	if (buf[0x00] != 'N' || buf[0x01] != 'E' || buf[0x02] != 'S' ||
 	    buf[0x03] != 'M' || buf[0x04] != 0x1a) {
 		printf("file is not in NSF format\n");
+		exitcode = EX_DATAERR;
+		goto finish;
+	}
+	if (buf[0x2d] != 0x00) {
+		printf("NSF name field has no trailing null\n");
+		exitcode = EX_DATAERR;
+		goto finish;
+	}
+	if (buf[0x4d] != 0x00) {
+		printf("NSF copyright field has no trailing null\n");
+		exitcode = EX_DATAERR;
+		goto finish;
+	}
+	if (buf[0x6d] != 0x00) {
+		printf("NSF artist field has no trailing null\n");
 		exitcode = EX_DATAERR;
 		goto finish;
 	}
