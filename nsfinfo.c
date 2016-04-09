@@ -206,6 +206,7 @@ main(int argc, char *argv[])
 		printf("    \"md5\": \"%s\",\n", md5);
 		printf("    \"sha1\": \"%s\"\n", sha1);
 		printf("  }\n");
+		printf("}\n");
 	}
 	else {
 		printf("version      = %u\n",     data->version);
