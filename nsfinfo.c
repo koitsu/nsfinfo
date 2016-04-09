@@ -63,6 +63,38 @@ struct nsf {
 
 #define NSF_HEADER_SIZE sizeof(struct nsf)
 
+/*
+ * The world's most ridiculous escaping routine, doing an
+ * atrocious job of two things:
+ *
+ * 1. Turning any non-ASCII byte into a UTF-16 equivalent
+ * 2. Escaping any double-quotes (i.e. " becomes \")
+ */
+static void
+expand_escapes(char *dest, const char *src)
+{
+	char c;
+	char rawhex[3];
+
+	while((c = *(src++))) {
+		if (c < 0x20 || c > 0x7e) {
+			snprintf(rawhex, 3, "%02x", c);
+			*(dest++) = '\\';
+			*(dest++) = 'u';
+			*(dest++) = '0';
+			*(dest++) = '0';
+			*(dest++) = rawhex[0];
+			*(dest++) = rawhex[1];
+			continue;
+		}
+		else if (c == '"') {
+			*(dest++) = '\\';
+		}
+		*(dest++) = c;
+	}
+	*dest = '\0';
+}
+
 static void
 USAGE(void)
 {
@@ -80,14 +112,17 @@ int
 main(int argc, char *argv[])
 {
 	int ch;
-	int json_output  = 0;
-	int exitcode     = EX_OK;
-	int fd           = -1;
-	char *filename   = NULL;
-	char *buf        = NULL;
-	char *md5        = NULL;
-	char *sha1       = NULL;
-	struct nsf *data = NULL;
+	int json_output   = 0;
+	int exitcode      = EX_OK;
+	int fd            = -1;
+	char *filename    = NULL;
+	char *buf         = NULL;
+	char *name_e      = NULL;
+	char *artist_e    = NULL;
+	char *copyright_e = NULL;
+	char *md5         = NULL;
+	char *sha1        = NULL;
+	struct nsf *data  = NULL;
 
 	while ((ch = getopt(argc, argv, "Jh?")) != -1) {
 		switch(ch) {
@@ -176,6 +211,36 @@ main(int argc, char *argv[])
 	md5 = MD5File(filename, NULL);
 	sha1 = SHA_File(filename, NULL);
 
+	/*
+	 * The * 6 is to ensure we have space in the case that every single
+	 * byte has to be a UTF-16 equivalent.  The value 6 comes from the
+	 * length of literal string "\u00xx".
+	 */
+	name_e = calloc(sizeof(data->name) * 6, 1);
+	if (name_e == NULL) {
+		printf("calloc() failed (name_e)\n");
+		exitcode = EX_OSERR;
+		goto finish;
+	}
+
+	artist_e = calloc(sizeof(data->artist) * 6, 1);
+	if (artist_e == NULL) {
+		printf("calloc() failed (artist_e)\n");
+		exitcode = EX_OSERR;
+		goto finish;
+	}
+
+	copyright_e = calloc(sizeof(data->copyright) * 6, 1);
+	if (copyright_e == NULL) {
+		printf("calloc() failed (copyright_e)\n");
+		exitcode = EX_OSERR;
+		goto finish;
+	}
+
+	expand_escapes(name_e, data->name);
+	expand_escapes(artist_e, data->artist);
+	expand_escapes(copyright_e, data->copyright);
+
 	if (json_output) {
 		printf("{\n");
 		printf("  \"nsf\": {\n");
@@ -185,9 +250,9 @@ main(int argc, char *argv[])
 		printf("    \"load_addr\": \"0x%04x\",\n",    data->load_addr);
 		printf("    \"init_addr\": \"0x%04x\",\n",    data->init_addr);
 		printf("    \"play_addr\": \"0x%04x\",\n",    data->play_addr);
-		printf("    \"name\": \"%s\",\n",             data->name);
-		printf("    \"artist\": \"%s\",\n",           data->artist);
-		printf("    \"copyright\": \"%s\",\n",        data->copyright);
+		printf("    \"name\": \"%s\",\n",             name_e);
+		printf("    \"artist\": \"%s\",\n",           artist_e);
+		printf("    \"copyright\": \"%s\",\n",        copyright_e);
 		printf("    \"speed_ntsc\": \"0x%04x\",\n",   data->speed_ntsc);
 		printf("    \"bankswitch70\": \"0x%02x\",\n", data->bankswitch70);
 		printf("    \"bankswitch71\": \"0x%02x\",\n", data->bankswitch71);
@@ -241,6 +306,9 @@ finish:
 	}
 	free(sha1);
 	free(md5);
+	free(copyright_e);
+	free(artist_e);
+	free(name_e);
 	free(data);
 	free(buf);
 	exit(exitcode);
