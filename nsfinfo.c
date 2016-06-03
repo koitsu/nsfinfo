@@ -71,7 +71,7 @@ expand_escapes(char *dest, const char *src)
 
 	while((c = *(src++))) {
 		if (c < 0x20 || c > 0x7e) {
-			snprintf(rawhex, 3, "%02x", c);
+			snprintf(rawhex, sizeof(rawhex), "%02x", c);
 			*(dest++) = '\\';
 			*(dest++) = 'u';
 			*(dest++) = '0';
