@@ -29,6 +29,10 @@ Bugs/Notes
   characters (ex. Latin-1 é, Swedish ö and å, Norwegian ø, etc.).  It's
   a problem that isn't easily/simply solved.
 
+License
+-------
+nsfinfo is released under the 2-clause BSD license ("FreeBSD License") per [LICENSE](LICENSE).
+
 Contributing
 ------------
 Please contribute!
