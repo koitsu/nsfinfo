@@ -69,13 +69,16 @@ expand_escapes(char *dest, const char *src)
 static void
 USAGE(void)
 {
-	printf("Usage: nsfinfo [options] filename\n");
-	printf("\n");
-	printf("  -J            JSON-formatted output\n");
-	printf("  -h            print this message\n");
-	printf("\n");
-	printf("https://github.com/koitsu/nsfinfo\n");
-	printf("Report bugs at https://github.com/koitsu/nsfinfo/issues\n");
+	fprintf(stderr,
+		"Usage: nsfinfo [options] filename\n"
+		"\n"
+		"Options:\n"
+		"  -J            JSON-formatted output\n"
+		"  -h            print this message\n"
+		"\n"
+		"https://github.com/koitsu/nsfinfo\n"
+		"Report bugs at https://github.com/koitsu/nsfinfo/issues\n"
+	);
 	exit(EX_USAGE);
 }
 
