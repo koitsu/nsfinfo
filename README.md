@@ -29,6 +29,54 @@ Bugs/Notes
   characters (ex. Latin-1 é, Swedish ö and å, Norwegian ø, etc.).  It's
   a problem that isn't easily/simply solved.
 
+Usage
+-----
+```Shell
+$ ./nsfinfo "Akumajou Densetsu (VRC6).nsf"
+version      = 1
+song_count   = 28
+song_start   = 1
+load_addr    = 8000
+init_addr    = ffe0
+play_addr    = ffd0
+name         = "Akumajou Densetsu"
+artist       = "1989 Konami"
+copyright    = "<?>"
+speed_ntsc   = 4100
+bankswitch   = 0b0c0a0a
+speed_pal    = 0000
+region       = 00
+extra_sound  = 01
+reserved     = 0000
+md5          = d867645237ee14fd2c084f43ed88523b
+sha1         = 5184128cc7bb67a3dab262525e07412a8f1e14d3
+
+$ ./nsfinfo -J "Akumajou Densetsu (VRC6).nsf"
+{
+  "nsf": {
+    "version": 1,
+    "song_count": 28,
+    "song_start": 1,
+    "load_addr": "8000",
+    "init_addr": "ffe0",
+    "play_addr": "ffd0",
+    "name": "Akumajou Densetsu",
+    "artist": "1989 Konami",
+    "copyright": "<?>",
+    "speed_ntsc": "4100",
+    "bankswitch": "0b0c0a0a",
+    "speed_pal": "0000",
+    "region": "00",
+    "extra_sound": "01",
+    "reserved": "0000"
+  },
+  "metadata": {
+    "md5": "d867645237ee14fd2c084f43ed88523b",
+    "sha1": "5184128cc7bb67a3dab262525e07412a8f1e14d3"
+  }
+}
+```
+
 License
 -------
 nsfinfo is released under the 2-clause BSD license ("FreeBSD License") per [LICENSE](LICENSE).
