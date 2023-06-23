@@ -163,12 +163,12 @@ main(int argc, char *argv[])
 		goto finish;
 	}
 	if (buf[0x4d] != 0x00) {
-		printf("NSF copyright field has no trailing null\n");
+		printf("NSF artist field has no trailing null\n");
 		exitcode = EX_DATAERR;
 		goto finish;
 	}
 	if (buf[0x6d] != 0x00) {
-		printf("NSF artist field has no trailing null\n");
+		printf("NSF copyright field has no trailing null\n");
 		exitcode = EX_DATAERR;
 		goto finish;
 	}
@@ -183,8 +183,8 @@ main(int argc, char *argv[])
 	data->play_addr    = buf[0x0c] | ((uint16_t) buf[0x0d] << 8);
 
 	memcpy(data->name,      buf+0x0e, sizeof(data->name));
-	memcpy(data->copyright, buf+0x2e, sizeof(data->copyright));
-	memcpy(data->artist,    buf+0x4e, sizeof(data->artist));
+	memcpy(data->artist,    buf+0x2e, sizeof(data->artist));
+	memcpy(data->copyright, buf+0x4e, sizeof(data->copyright));
 
 	data->speed_ntsc   = buf[0x6e] | ((uint16_t) buf[0x6f] << 8);
 	data->bankswitch   = ((uint64_t) buf[0x70] << 56) |
