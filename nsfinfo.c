@@ -7,10 +7,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sysexits.h>
-#include <md5.h>
-#include <sha.h>
+#include <stdint.h>
 
 struct nsf {
 	char		header[5];		/* offset 0x00 */
@@ -33,6 +31,120 @@ struct nsf {
 };
 
 #define NSF_HEADER_SIZE sizeof(struct nsf)
+
+/* Helper functions for calculating the MD5 and SHA256 hashes
+ * of a file.
+ *
+ * On FreeBSD we simply reference the libmd equivalent functions,
+ * while on Linux we have to write our own which leverage the
+ * functions from md5.c and sha256.c.  These are similar in concept
+ * to the FreeBSD libmd functions.
+ *
+ * Note: we blindly assume any non-FreeBSD system is Linux, which
+ * is a bad assumption but for now it keeps things simple.
+ * */
+
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <md5.h>
+#include <sha256.h>
+#define my_MD5_File(a) MD5File(a, NULL)
+#define my_SHA256_File(a) SHA256_File(a, NULL)
+#else
+#include "md5.h"
+#include "sha256.h"
+static char *
+my_MD5_File(const char *filename)
+{
+	FILE *fd;
+	long filelen;
+	unsigned char *filebuf = NULL;
+	MD5_CTX c;
+	BYTE hash[MD5_BLOCK_SIZE];
+	char *hashstr = NULL;
+	char *hashstrp;
+
+	fd = fopen(filename, "rb");
+	if (fd == NULL) {
+		printf("open() failed\n");
+		return (NULL);
+	}
+
+	/* TODO handle errors */
+	fseek(fd, 0, SEEK_END);
+	filelen = ftell(fd);
+	fseek(fd, 0, SEEK_SET);
+
+	/* TODO handle errors */
+	filebuf = calloc(filelen, 1);
+	fread(filebuf, filelen, 1, fd);
+	fclose(fd);
+
+	md5_init(&c);
+	md5_update(&c, filebuf, filelen);
+	md5_final(&c, hash);
+	free(filebuf);
+
+	/*
+	 * MD5_BLOCK_SIZE * 2 + 1, since two ASCII characters represent
+	 * a byte, and we need one extra byte for the trailing NULL.
+	 */
+	hashstr = calloc((MD5_BLOCK_SIZE * 2) + 1, 1);
+	hashstrp = &hashstr[0];
+
+	for (unsigned int i = 0; i < MD5_BLOCK_SIZE; i++) {
+		hashstrp += sprintf(hashstrp, "%02x", hash[i]);
+	}
+
+	return (hashstr);
+}
+
+static char *
+my_SHA256_File(const char *filename)
+{
+	FILE *fd;
+	long filelen;
+	unsigned char *filebuf = NULL;
+	SHA256_CTX c;
+	BYTE hash[SHA256_BLOCK_SIZE];
+	char *hashstr = NULL;
+	char *hashstrp;
+
+	fd = fopen(filename, "rb");
+	if (fd == NULL) {
+		printf("open() failed\n");
+		return (NULL);
+	}
+
+	/* TODO handle errors */
+	fseek(fd, 0, SEEK_END);
+	filelen = ftell(fd);
+	fseek(fd, 0, SEEK_SET);
+
+	/* TODO handle errors */
+	filebuf = calloc(filelen, 1);
+	fread(filebuf, filelen, 1, fd);
+	fclose(fd);
+
+	sha256_init(&c);
+	sha256_update(&c, filebuf, filelen);
+	sha256_final(&c, hash);
+	free(filebuf);
+
+	/*
+	 * SHA256_BLOCK_SIZE * 2 + 1, since two ASCII characters represent
+	 * a byte, and we need one extra byte for the trailing NULL.
+	 */
+	hashstr = calloc((SHA256_BLOCK_SIZE * 2) + 1, 1);
+	hashstrp = &hashstr[0];
+
+	for (unsigned int i = 0; i < SHA256_BLOCK_SIZE; i++) {
+		hashstrp += sprintf(hashstrp, "%02x", hash[i]);
+	}
+
+	return (hashstr);
+}
+#endif
 
 /*
  * The world's most ridiculous escaping routine, doing an
@@ -95,7 +207,7 @@ main(int argc, char *argv[])
 	char *artist_e    = NULL;
 	char *copyright_e = NULL;
 	char *md5         = NULL;
-	char *sha1        = NULL;
+	char *sha256      = NULL;
 	struct nsf *data  = NULL;
 
 	while ((ch = getopt(argc, argv, "Jh?")) != -1) {
@@ -203,8 +315,8 @@ main(int argc, char *argv[])
 	                     ((uint32_t) buf[0x7e] << 8)  |
 	                     buf[0x7f];
 
-	md5 = MD5File(filename, NULL);
-	sha1 = SHA_File(filename, NULL);
+	md5 = my_MD5_File(filename);
+	sha256 = my_SHA256_File(filename);
 
 	/*
 	 * The * 6 is to ensure we have space in the case that every single
@@ -257,7 +369,7 @@ main(int argc, char *argv[])
 		printf("  },\n");
 		printf("  \"metadata\": {\n");
 		printf("    \"md5\": \"%s\",\n", md5);
-		printf("    \"sha1\": \"%s\"\n", sha1);
+		printf("    \"sha256\": \"%s\"\n", sha256);
 		printf("  }\n");
 		printf("}\n");
 	}
@@ -278,14 +390,14 @@ main(int argc, char *argv[])
 		printf("extra_sound  = %02x\n",   data->extra_sound);
 		printf("reserved     = %04x\n",   data->reserved);
 		printf("md5          = %s\n",     md5);
-		printf("sha1         = %s\n",     sha1);
+		printf("sha256       = %s\n",     sha256);
 	}
 
 finish:
 	if (fd != -1) {
 		close(fd);
 	}
-	free(sha1);
+	free(sha256);
 	free(md5);
 	free(copyright_e);
 	free(artist_e);

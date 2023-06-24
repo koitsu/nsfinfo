@@ -6,9 +6,15 @@ CFLAGS+=	-g3 -ggdb -Werror -Wall -Wextra -Wformat-security -Waggregate-return -W
 
 all: nsfinfo
 
-nsfinfo: nsfinfo.c
-	${CC} ${CFLAGS} -o ${.TARGET} nsfinfo.c -lmd
+md5.o: md5.c md5.h
+	${CC} -c ${CFLAGS} -o $@ $<
+
+sha256.o: sha256.c sha256.h
+	${CC} -c ${CFLAGS} -o $@ $<
+
+nsfinfo: nsfinfo.c md5.o sha256.o
+	${CC} ${CFLAGS} -o $@ $^
 
 clean:
-	rm -f nsfinfo *.core
+	rm -f nsfinfo *.o *.core
 
