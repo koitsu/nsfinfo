@@ -70,6 +70,16 @@ $ ./nsfinfo -J "Akumajou Densetsu (VRC6).nsf"
 }
 ```
 
+Testing and Debugging
+---------------------
+Valgrind is used occasionally to detect problematic situations or code bugs.  Useful
+invocations are as follows:
+
+```
+valgrind --track-origins=yes ./nsfinfo /path/to/file.nsf
+valgrind --track-origins=yes ./nsfinfo -J /path/to/file.nsf
+```
+
 License
 -------
 nsfinfo is released under the 2-clause BSD license ("FreeBSD License") per [LICENSE](LICENSE).
