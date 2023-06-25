@@ -57,7 +57,7 @@ static char *
 my_MD5_File(const char *filename)
 {
 	FILE *fd;
-	long filelen;
+	size_t filelen;
 	unsigned char *filebuf = NULL;
 	MD5_CTX c;
 	BYTE hash[MD5_BLOCK_SIZE];
@@ -66,18 +66,27 @@ my_MD5_File(const char *filename)
 
 	fd = fopen(filename, "rb");
 	if (fd == NULL) {
-		printf("open() failed\n");
-		return (NULL);
+		printf("my_MD5_File(): fopen() failed\n");
+		return NULL;
 	}
 
-	/* TODO handle errors */
+	/* TODO handle fseek/ftell errors */
 	fseek(fd, 0, SEEK_END);
 	filelen = ftell(fd);
 	fseek(fd, 0, SEEK_SET);
 
-	/* TODO handle errors */
 	filebuf = calloc(filelen, 1);
-	fread(filebuf, filelen, 1, fd);
+	if (filebuf == NULL) {
+		printf("my_MD5_File(): calloc() failed\n");
+		fclose(fd);
+		return NULL;
+	}
+	if (fread(filebuf, 1, filelen, fd) != filelen) {
+		printf("my_MD5_File(): fread() was short\n");
+		free(filebuf);
+		fclose(fd);
+		return NULL;
+	}
 	fclose(fd);
 
 	md5_init(&c);
@@ -96,14 +105,14 @@ my_MD5_File(const char *filename)
 		hashstrp += sprintf(hashstrp, "%02x", hash[i]);
 	}
 
-	return (hashstr);
+	return hashstr;
 }
 
 static char *
 my_SHA256_File(const char *filename)
 {
 	FILE *fd;
-	long filelen;
+	size_t filelen;
 	unsigned char *filebuf = NULL;
 	SHA256_CTX c;
 	BYTE hash[SHA256_BLOCK_SIZE];
@@ -112,18 +121,27 @@ my_SHA256_File(const char *filename)
 
 	fd = fopen(filename, "rb");
 	if (fd == NULL) {
-		printf("open() failed\n");
-		return (NULL);
+		printf("my_SHA256_File(): fopen() failed\n");
+		return NULL;
 	}
 
-	/* TODO handle errors */
+	/* TODO handle fseek/ftell errors */
 	fseek(fd, 0, SEEK_END);
 	filelen = ftell(fd);
 	fseek(fd, 0, SEEK_SET);
 
-	/* TODO handle errors */
 	filebuf = calloc(filelen, 1);
-	fread(filebuf, filelen, 1, fd);
+	if (filebuf == NULL) {
+		printf("my_SHA256_File(): calloc() failed\n");
+		fclose(fd);
+		return NULL;
+	}
+	if (fread(filebuf, 1, filelen, fd) != filelen) {
+		printf("my_SHA256_File(): fread() was short\n");
+		free(filebuf);
+		fclose(fd);
+		return NULL;
+	}
 	fclose(fd);
 
 	sha256_init(&c);
@@ -142,7 +160,7 @@ my_SHA256_File(const char *filename)
 		hashstrp += sprintf(hashstrp, "%02x", hash[i]);
 	}
 
-	return (hashstr);
+	return hashstr;
 }
 #endif
 
@@ -200,7 +218,7 @@ main(int argc, char *argv[])
 	int ch;
 	int json_output   = 0;
 	int exitcode      = EX_OK;
-	int fd            = -1;
+	FILE *fd          = NULL;
 	char *filename    = NULL;
 	char *buf         = NULL;
 	char *name_e      = NULL;
@@ -235,29 +253,27 @@ main(int argc, char *argv[])
 	if (buf == NULL) {
 		printf("calloc() failed (buf)\n");
 		exitcode = EX_OSERR;
-		goto finish;
+		goto finish_depth1;
 	}
-
-	fd = open(filename, O_RDONLY);
-	if (fd == -1) {
-		printf("open() failed\n");
-		exitcode = EX_NOINPUT;
-		goto finish;
-	}
-
-	if (read(fd, buf, NSF_HEADER_SIZE) != NSF_HEADER_SIZE) {
-		printf("read() was short: file too small\n");
-		exitcode = EX_DATAERR;
-		goto finish;
-	}
-
-	close(fd);
 
 	data = calloc(NSF_HEADER_SIZE, 1);
 	if (data == NULL) {
 		printf("calloc() failed (data)\n");
 		exitcode = EX_OSERR;
-		goto finish;
+		goto finish_depth2;
+	}
+
+	fd = fopen(filename, "rb");
+	if (fd == NULL) {
+		printf("fopen() failed\n");
+		exitcode = EX_NOINPUT;
+		goto finish_depth3;
+	}
+
+	if (fread(buf, 1, NSF_HEADER_SIZE, fd) != NSF_HEADER_SIZE) {
+		printf("fread() was short: file too small\n");
+		exitcode = EX_DATAERR;
+		goto finish_depth4;
 	}
 
 	/*
@@ -267,22 +283,22 @@ main(int argc, char *argv[])
 	    buf[0x03] != 'M' || buf[0x04] != 0x1a) {
 		printf("file is not in NSF format\n");
 		exitcode = EX_DATAERR;
-		goto finish;
+		goto finish_depth4;
 	}
 	if (buf[0x2d] != 0x00) {
 		printf("NSF name field has no trailing null\n");
 		exitcode = EX_DATAERR;
-		goto finish;
+		goto finish_depth4;
 	}
 	if (buf[0x4d] != 0x00) {
 		printf("NSF artist field has no trailing null\n");
 		exitcode = EX_DATAERR;
-		goto finish;
+		goto finish_depth4;
 	}
 	if (buf[0x6d] != 0x00) {
 		printf("NSF copyright field has no trailing null\n");
 		exitcode = EX_DATAERR;
-		goto finish;
+		goto finish_depth4;
 	}
 
 	memcpy(data->header, buf+0x00, sizeof(data->header));
@@ -316,7 +332,18 @@ main(int argc, char *argv[])
 	                     buf[0x7f];
 
 	md5 = my_MD5_File(filename);
+	if (md5 == NULL) {
+		printf("my_MD5_File() failed\n");
+		exitcode = EX_OSERR;
+		goto finish_depth4;
+	}
+
 	sha256 = my_SHA256_File(filename);
+	if (sha256 == NULL) {
+		printf("my_SHA256_File() failed\n");
+		exitcode = EX_OSERR;
+		goto finish_depth5;
+	}
 
 	/*
 	 * The * 6 is to ensure we have space in the case that every single
@@ -327,21 +354,21 @@ main(int argc, char *argv[])
 	if (name_e == NULL) {
 		printf("calloc() failed (name_e)\n");
 		exitcode = EX_OSERR;
-		goto finish;
+		goto finish_depth6;
 	}
 
 	artist_e = calloc(sizeof(data->artist) * 6, 1);
 	if (artist_e == NULL) {
 		printf("calloc() failed (artist_e)\n");
 		exitcode = EX_OSERR;
-		goto finish;
+		goto finish_depth7;
 	}
 
 	copyright_e = calloc(sizeof(data->copyright) * 6, 1);
 	if (copyright_e == NULL) {
 		printf("calloc() failed (copyright_e)\n");
 		exitcode = EX_OSERR;
-		goto finish;
+		goto finish_depth8;
 	}
 
 	expand_escapes(name_e, data->name);
@@ -393,17 +420,22 @@ main(int argc, char *argv[])
 		printf("sha256       = %s\n",     sha256);
 	}
 
-finish:
-	if (fd != -1) {
-		close(fd);
-	}
-	free(sha256);
-	free(md5);
 	free(copyright_e);
+finish_depth8:
 	free(artist_e);
+finish_depth7:
 	free(name_e);
+finish_depth6:
+	free(sha256);
+finish_depth5:
+	free(md5);
+finish_depth4:
+	fclose(fd);
+finish_depth3:
 	free(data);
+finish_depth2:
 	free(buf);
+finish_depth1:
 	exit(exitcode);
 }
 
