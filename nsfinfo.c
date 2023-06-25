@@ -220,7 +220,7 @@ main(int argc, char *argv[])
 	int ch;
 	int json_output   = 0;
 	int exitcode      = EX_OK;
-	FILE *fd          = NULL;
+	FILE *fd;
 	char *filename    = NULL;
 	char *buf         = NULL;
 	char *name_e      = NULL;
