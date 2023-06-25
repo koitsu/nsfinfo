@@ -98,6 +98,7 @@ my_MD5_File(const char *filename)
 	 * MD5_BLOCK_SIZE * 2 + 1, since two ASCII characters represent
 	 * a byte, and we need one extra byte for the trailing NULL.
 	 */
+	/* TODO handle calloc errors */
 	hashstr = calloc((MD5_BLOCK_SIZE * 2) + 1, 1);
 	hashstrp = &hashstr[0];
 
@@ -153,6 +154,7 @@ my_SHA256_File(const char *filename)
 	 * SHA256_BLOCK_SIZE * 2 + 1, since two ASCII characters represent
 	 * a byte, and we need one extra byte for the trailing NULL.
 	 */
+	/* TODO handle calloc errors */
 	hashstr = calloc((SHA256_BLOCK_SIZE * 2) + 1, 1);
 	hashstrp = &hashstr[0];
 
