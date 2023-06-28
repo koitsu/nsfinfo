@@ -66,7 +66,7 @@ my_MD5_File(const char *filename)
 
 	fd = fopen(filename, "rb");
 	if (fd == NULL) {
-		printf("my_MD5_File(): fopen() failed\n");
+		fprintf(stderr, "my_MD5_File(): fopen() failed\n");
 		return NULL;
 	}
 
@@ -77,12 +77,12 @@ my_MD5_File(const char *filename)
 
 	filebuf = calloc(filelen, 1);
 	if (filebuf == NULL) {
-		printf("my_MD5_File(): calloc() failed\n");
+		fprintf(stderr, "my_MD5_File(): calloc() failed\n");
 		fclose(fd);
 		return NULL;
 	}
 	if (fread(filebuf, 1, filelen, fd) != filelen) {
-		printf("my_MD5_File(): fread() was short\n");
+		fprintf(stderr, "my_MD5_File(): fread() was short\n");
 		free(filebuf);
 		fclose(fd);
 		return NULL;
@@ -122,7 +122,7 @@ my_SHA256_File(const char *filename)
 
 	fd = fopen(filename, "rb");
 	if (fd == NULL) {
-		printf("my_SHA256_File(): fopen() failed\n");
+		fprintf(stderr, "my_SHA256_File(): fopen() failed\n");
 		return NULL;
 	}
 
@@ -133,12 +133,12 @@ my_SHA256_File(const char *filename)
 
 	filebuf = calloc(filelen, 1);
 	if (filebuf == NULL) {
-		printf("my_SHA256_File(): calloc() failed\n");
+		fprintf(stderr, "my_SHA256_File(): calloc() failed\n");
 		fclose(fd);
 		return NULL;
 	}
 	if (fread(filebuf, 1, filelen, fd) != filelen) {
-		printf("my_SHA256_File(): fread() was short\n");
+		fprintf(stderr, "my_SHA256_File(): fread() was short\n");
 		free(filebuf);
 		fclose(fd);
 		return NULL;
@@ -253,27 +253,27 @@ main(int argc, char *argv[])
 
 	buf = calloc(NSF_HEADER_SIZE, 1);
 	if (buf == NULL) {
-		printf("calloc() failed (buf)\n");
+		fprintf(stderr, "calloc() failed (buf)\n");
 		exitcode = EX_OSERR;
 		goto finish_depth1;
 	}
 
 	data = calloc(NSF_HEADER_SIZE, 1);
 	if (data == NULL) {
-		printf("calloc() failed (data)\n");
+		fprintf(stderr, "calloc() failed (data)\n");
 		exitcode = EX_OSERR;
 		goto finish_depth2;
 	}
 
 	fd = fopen(filename, "rb");
 	if (fd == NULL) {
-		printf("fopen() failed\n");
+		fprintf(stderr, "fopen() failed\n");
 		exitcode = EX_NOINPUT;
 		goto finish_depth3;
 	}
 
 	if (fread(buf, 1, NSF_HEADER_SIZE, fd) != NSF_HEADER_SIZE) {
-		printf("fread() was short: file too small\n");
+		fprintf(stderr, "fread() was short: file too small\n");
 		exitcode = EX_DATAERR;
 		goto finish_depth4;
 	}
@@ -283,22 +283,22 @@ main(int argc, char *argv[])
 	 */
 	if (buf[0x00] != 'N' || buf[0x01] != 'E' || buf[0x02] != 'S' ||
 	    buf[0x03] != 'M' || buf[0x04] != 0x1a) {
-		printf("file is not in NSF format\n");
+		fprintf(stderr, "file is not in NSF format\n");
 		exitcode = EX_DATAERR;
 		goto finish_depth4;
 	}
 	if (buf[0x2d] != 0x00) {
-		printf("NSF name field has no trailing null\n");
+		fprintf(stderr, "NSF name field has no trailing null\n");
 		exitcode = EX_DATAERR;
 		goto finish_depth4;
 	}
 	if (buf[0x4d] != 0x00) {
-		printf("NSF artist field has no trailing null\n");
+		fprintf(stderr, "NSF artist field has no trailing null\n");
 		exitcode = EX_DATAERR;
 		goto finish_depth4;
 	}
 	if (buf[0x6d] != 0x00) {
-		printf("NSF copyright field has no trailing null\n");
+		fprintf(stderr, "NSF copyright field has no trailing null\n");
 		exitcode = EX_DATAERR;
 		goto finish_depth4;
 	}
@@ -335,14 +335,14 @@ main(int argc, char *argv[])
 
 	md5 = my_MD5_File(filename);
 	if (md5 == NULL) {
-		printf("my_MD5_File() failed\n");
+		fprintf(stderr, "my_MD5_File() failed\n");
 		exitcode = EX_OSERR;
 		goto finish_depth4;
 	}
 
 	sha256 = my_SHA256_File(filename);
 	if (sha256 == NULL) {
-		printf("my_SHA256_File() failed\n");
+		fprintf(stderr, "my_SHA256_File() failed\n");
 		exitcode = EX_OSERR;
 		goto finish_depth5;
 	}
@@ -354,21 +354,21 @@ main(int argc, char *argv[])
 	 */
 	name_e = calloc(sizeof(data->name) * 6, 1);
 	if (name_e == NULL) {
-		printf("calloc() failed (name_e)\n");
+		fprintf(stderr, "calloc() failed (name_e)\n");
 		exitcode = EX_OSERR;
 		goto finish_depth6;
 	}
 
 	artist_e = calloc(sizeof(data->artist) * 6, 1);
 	if (artist_e == NULL) {
-		printf("calloc() failed (artist_e)\n");
+		fprintf(stderr, "calloc() failed (artist_e)\n");
 		exitcode = EX_OSERR;
 		goto finish_depth7;
 	}
 
 	copyright_e = calloc(sizeof(data->copyright) * 6, 1);
 	if (copyright_e == NULL) {
-		printf("calloc() failed (copyright_e)\n");
+		fprintf(stderr, "calloc() failed (copyright_e)\n");
 		exitcode = EX_OSERR;
 		goto finish_depth8;
 	}
