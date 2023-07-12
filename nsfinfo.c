@@ -58,6 +58,7 @@ my_MD5_File(const char *filename)
 {
 	FILE *fd;
 	size_t filelen;
+	unsigned int i;
 	unsigned char *filebuf = NULL;
 	MD5_CTX c;
 	BYTE hash[MD5_BLOCK_SIZE];
@@ -102,7 +103,7 @@ my_MD5_File(const char *filename)
 	hashstr = calloc((MD5_BLOCK_SIZE * 2) + 1, 1);
 	hashstrp = &hashstr[0];
 
-	for (unsigned int i = 0; i < MD5_BLOCK_SIZE; i++) {
+	for (i = 0; i < MD5_BLOCK_SIZE; i++) {
 		hashstrp += sprintf(hashstrp, "%02x", hash[i]);
 	}
 
@@ -114,6 +115,7 @@ my_SHA256_File(const char *filename)
 {
 	FILE *fd;
 	size_t filelen;
+	unsigned int i;
 	unsigned char *filebuf = NULL;
 	SHA256_CTX c;
 	BYTE hash[SHA256_BLOCK_SIZE];
@@ -158,7 +160,7 @@ my_SHA256_File(const char *filename)
 	hashstr = calloc((SHA256_BLOCK_SIZE * 2) + 1, 1);
 	hashstrp = &hashstr[0];
 
-	for (unsigned int i = 0; i < SHA256_BLOCK_SIZE; i++) {
+	for (i = 0; i < SHA256_BLOCK_SIZE; i++) {
 		hashstrp += sprintf(hashstrp, "%02x", hash[i]);
 	}
 
